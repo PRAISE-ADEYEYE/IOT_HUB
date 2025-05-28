@@ -3,10 +3,5 @@ numpy
 pandas
 Pillow
 plotly
-torch
-torchvision
-ultralytics
-streamlit-lottie
-opencv-python
 time
 PIL
