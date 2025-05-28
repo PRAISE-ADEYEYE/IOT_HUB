@@ -3,5 +3,3 @@ numpy
 pandas
 Pillow
 plotly
-time
-PIL
