@@ -1,163 +1,210 @@
-# SmartSecure IoT Hub - Full Streamlit App
-# Author: Praise Adeyeye (Covenant University)
-# Description: AI-powered security system + real-time IoT sensor dashboard
-
-# --- Libraries ---
 import streamlit as st
 import numpy as np
 import pandas as pd
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 import plotly.graph_objects as go
-from streamlit_lottie import st_lottie
-from ultralytics import YOLO
-import json
+import random
+import time
 
-# --- Page Setup ---
+# Page setup
 st.set_page_config(page_title="SmartSecure IoT Hub", layout="wide")
+st.markdown(
+    """
+    <style>
+        .big-title {
+            font-size: 40px !important;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        .sub-section {
+            font-size: 18px;
+            color: #34495e;
+        }
+        .highlight {
+            background-color: #f39c12;
+            padding: 4px;
+            border-radius: 5px;
+            color: white;
+        }
+        .card {
+            padding: 1rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            background: #ffffff;
+            margin-bottom: 1rem;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 
-# --- Load Lottie Animation ---
+# --- Functions ---
+def overview_page():
+    st.markdown(
+        "<h1 style='font-size: 48px; color: #0c2461; font-weight: bold;'>🏠 SmartSecure IoT Hub</h1>",
+        unsafe_allow_html=True
+    )
 
-def load_lottiefile(filepath: str):
-    with open(filepath, "r") as f:
-        return json.load(f)
+    typing_area = st.empty()  # Reserve a space for typing effect
+
+    intro_text = (
+        "Welcome to SmartSecure — your all-in-one simulated IoT + AI security dashboard.\n\n"
+        "Imagine a world where your environment is being monitored in real-time:\n"
+        "- 🔥 Fire? Detected.\n"
+        "- 💨 Gas leak? Alerted.\n"
+        "- 👀 Intruder? Identified.\n\n"
+        "SmartSecure provides that virtual simulation, giving you a complete tech demonstration "
+        "without the need for physical sensors or cameras.\n\n"
+        "Ready to dive in? Here’s what this powerful platform offers:"
+    )
+
+    def typewriter_effect(text, delay=0.02):
+        output = ""
+        for char in text:
+            output += char
+            typing_area.markdown(
+                f"<div style='font-size: 20px; color: #2d3436; font-family: monospace; white-space: pre-wrap;'>{output}</div>",
+                unsafe_allow_html=True
+            )
+            time.sleep(delay)
+
+    typewriter_effect(intro_text)
+    time.sleep(0.8)
+
+    st.markdown("---")
+    st.markdown(
+        """
+        <div style='font-size: 22px; color: #1e3799; font-weight: bold;'>✨ Features</div>
+        <ul style='font-size: 18px; color: #2d3436;'>
+            <li>📊 Live sensor dashboards (simulated)</li>
+            <li>🧠 AI detection system demo</li>
+            <li>🖼 CAD visualizations (static render)</li>
+            <li>⚡ Smart alerting feedback</li>
+        </ul>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        """
+        <div style='font-size: 22px; color: #1e3799; font-weight: bold;'>🧰 Technology Stack</div>
+        <ul style='font-size: 18px; color: #2d3436;'>
+            <li><b>Streamlit</b> - Interactive web interface</li>
+            <li><b>NumPy + Pandas</b> - Simulated real-time sensor data</li>
+            <li><b>Plotly</b> - Dynamic gauges and charts</li>
+            <li><b>Pillow</b> - AI image processing demonstration</li>
+        </ul>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        """
+        <div style='font-size: 22px; color: #1e3799; font-weight: bold;'>🧑‍💻 Created By</div>
+        <p style='font-size: 18px; color: #2d3436;'>
+            <b>Praise Adeyeye</b> — Lead Developer & Vision Architect<br>
+            <b>Farouk Umoru</b> — Hardware Design & CAD Simulation
+        </p>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.success("🚀 Let’s explore the system using the sidebar menu ➡️")
 
 
-# --- Simulate IoT Sensor Readings ---
-def simulate_sensor_data():
+def generate_sensor_data():
     return {
-        "Temperature (C)": np.random.uniform(20, 70),
-        "Humidity (%)": np.random.uniform(30, 90),
-        "Gas Level (ppm)": np.random.uniform(200, 900),
-        "Vibration (m/s²)": np.random.uniform(0, 5),
-        "Smoke Level": np.random.uniform(0, 100)
+        "Temperature (°C)": round(random.uniform(20, 75), 2),
+        "Humidity (%)": round(random.uniform(30, 90), 2),
+        "Gas Level (ppm)": round(random.uniform(100, 900), 2),
+        "Vibration (m/s²)": round(random.uniform(0, 5), 2),
+        "Smoke Level (%)": round(random.uniform(0, 100), 2)
     }
 
 
-# --- Generate Alert Messages Based on Readings ---
-def create_alerts(data):
-    alerts = []
-    if data['Temperature (C)'] > 50:
-        alerts.append("🔥 High Temperature Detected!")
-    if data['Gas Level (ppm)'] > 600:
-        alerts.append("🧪 Gas Leak Detected!")
-    if data['Vibration (m/s²)'] > 3:
-        alerts.append("⚠️ High Vibration - Structural Risk!")
-    if data['Smoke Level'] > 50:
-        alerts.append("🚨 Smoke Detected!")
-    return alerts
-
-
-# --- Draw Bounding Boxes for Object Detection ---
-def draw_detection_boxes(image_path, model):
-    image = Image.open(image_path).convert("RGB")
-    results = model(image_path)
-    draw = ImageDraw.Draw(image)
-    for r in results:
-        for box in r.boxes:
-            x1, y1, x2, y2 = box.xyxy[0].tolist()
-            cls = int(box.cls[0].item())
-            label = model.names[cls]
-            draw.rectangle([x1, y1, x2, y2], outline="red", width=3)
-            draw.text((x1, y1 - 10), label, fill="red")
-    return image
-
-
-# --- Sensor Dashboard UI ---
-def sensor_dashboard():
-    st.subheader("🔧 IoT Sensor Monitoring Dashboard")
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st_lottie(load_lottiefile("media/lottie/sensors.json"), height=200)
-
-    with col2:
-        st.write("Real-time simulated IoT readings:")
-        data = simulate_sensor_data()
-        df = pd.DataFrame([data])
-        st.dataframe(df.round(2), use_container_width=True)
-
-    # Gauge-style charts for each sensor
+def display_gauges(data):
     fig = go.Figure()
-    for key, val in data.items():
+    for key, value in data.items():
         fig.add_trace(go.Indicator(
             mode="gauge+number",
-            value=val,
+            value=value,
             title={'text': key},
             gauge={'axis': {'range': [0, 100]}}
         ))
-    fig.update_layout(height=400)
+    fig.update_layout(grid={'rows': 2, 'columns': 3}, height=500)
     st.plotly_chart(fig, use_container_width=True)
 
-    # Show alerts if thresholds exceeded
-    alerts = create_alerts(data)
+
+def sensor_dashboard():
+    st.markdown('<div class="big-title">📡 IoT Sensor Dashboard</div>', unsafe_allow_html=True)
+    data = generate_sensor_data()
+    df = pd.DataFrame([data])
+    st.dataframe(df.style.highlight_max(axis=1), use_container_width=True)
+    display_gauges(data)
+
+    alerts = []
+    if data["Temperature (°C)"] > 50:
+        alerts.append("🔥 High Temperature")
+    if data["Gas Level (ppm)"] > 600:
+        alerts.append("🧪 Gas Leak Detected")
+    if data["Smoke Level (%)"] > 60:
+        alerts.append("🚨 Smoke Alert")
+    if data["Vibration (m/s²)"] > 3:
+        alerts.append("⚠️ Vibration Alert")
+
     if alerts:
-        st.error("\n".join(alerts))
+        st.error(" | ".join(alerts))
     else:
-        st.success("✅ All systems operating within safe parameters.")
+        st.success("✅ All systems are stable.")
 
 
-# --- AI Security Vision Module ---
-def ai_vision_security(model):
-    st.subheader("🧠 AI Security Camera System")
-    st_lottie(load_lottiefile("media/lottie/security.json"), height=200)
-    uploaded_file = st.file_uploader("Upload an image for AI scan", type=["jpg", "jpeg", "png"])
+def draw_fake_ai_detection():
+    img = Image.new("RGB", (640, 360), "white")
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([50, 70, 250, 270], outline="red", width=3)
+    draw.text((60, 60), "Intruder", fill="red")
 
-    if uploaded_file:
-        st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
-        if st.button("Run AI Detection"):
-            with st.spinner("Processing with YOLOv8..."):
-                result_image = draw_detection_boxes(uploaded_file, model)
-                st.image(result_image, caption="Detection Result", use_column_width=True)
-                st.success("✅ AI Detection Complete")
+    return img
 
 
-# --- CAD Simulation Preview ---
-def cad_visualization():
-    st.subheader("📐 CAD Model & Simulation")
-    st.write("Preview of hardware device designed for deployment.")
-
-    st.image("media/images/cad_render.png", caption="SmartSecure IoT Device", use_column_width=True)
-    st.video("media/videos/cad_demo.mp4")
-
-
-# --- About Project Section ---
-def about_section():
-    st.title("SmartSecure IoT Hub")
-    st.markdown("""
-    ### 🚀 Our Mission  
-    Enhance campus security at Covenant University with real-time IoT & AI vision systems.
-
-    ### 🔍 Features  
-    - Real-time monitoring of environmental data (gas, smoke, temperature).
-    - AI-powered object detection for security surveillance.
-    - CAD-based hardware visualization for future deployment.
-
-    ### 🧑‍💻 Team  
-    - **Praise Adeyeye** – Lead Developer, AI Vision, Streamlit UI  
-    - **Farouk Umoru** – CAD Design, Simulation, Device Architecture  
-    """)
+def ai_security_vision():
+    st.markdown('<div class="big-title">🎯 AI Security Vision (Simulated)</div>', unsafe_allow_html=True)
+    st.write("This section simulates AI vision detection for security using static images.")
+    if st.button("Run Simulated AI Detection"):
+        st.image(draw_fake_ai_detection(), caption="Detection Result", use_column_width=True)
+        st.success("✅ Mock AI Detection Complete")
 
 
-# --- Main Navigation ---
+def cad_visuals():
+    st.markdown('<div class="big-title">🎨 CAD Visualization</div>', unsafe_allow_html=True)
+    st.write("Simulated design of a Smart IoT Monitoring Device.")
+    st.code("""
+    +--------------------------------+
+    |                                |
+    |    SMARTSECURE DEVICE BODY     |
+    |   [Sensors + Camera + WiFi]    |
+    |                                |
+    +--------------------------------+
+    """, language='text')
+    st.markdown("> **Note:** This is a simulated CAD representation. Real CAD renders can be embedded when available.")
+
+
+# --- Main App Navigation ---
 def main():
     st.sidebar.title("🔍 SmartSecure Navigation")
-    selection = st.sidebar.radio("Choose Section:", [
-        "🏠 About", "📡 Sensor Dashboard", "🎯 AI Security Vision", "🎨 CAD Visuals"
-    ])
+    section = st.sidebar.radio("Go to section:",
+                               ["🏠 Overview", "📡 Sensor Dashboard", "🎯 AI Security Vision", "🎨 CAD Visuals"])
 
-    model = YOLO("yolov8n.pt")  # Load pretrained AI model
-
-    if selection == "🏠 About":
-        about_section()
-    elif selection == "📡 Sensor Dashboard":
+    if section == "🏠 Overview":
+        overview_page()
+    elif section == "📡 Sensor Dashboard":
         sensor_dashboard()
-    elif selection == "🎯 AI Security Vision":
-        ai_vision_security(model)
-    elif selection == "🎨 CAD Visuals":
-        cad_visualization()
+    elif section == "🎯 AI Security Vision":
+        ai_security_vision()
+    elif section == "🎨 CAD Visuals":
+        cad_visuals()
 
 
-# --- Run App ---
 if __name__ == "__main__":
     main()
