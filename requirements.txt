@@ -8,3 +8,5 @@ torchvision
 ultralytics
 streamlit-lottie
 opencv-python
+time
+PIL
